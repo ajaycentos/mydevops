@@ -1,0 +1,37 @@
+pipeline{
+    agent any
+    
+    
+    stages {
+        
+        stage('Git Checkout')
+        {
+            steps{
+                git changelog: false, poll: false, url: 'https://github.com/ajaycentos/mydevops.git'
+            }
+        }
+        stage('Docker build image')
+        {
+            steps{
+                sh 'docker build -t ajaycentos/mynginx:v1 project2'
+            }
+        }
+        stage('Push image to docker hub')
+        {
+            steps{
+                
+                withCredentials([string(credentialsId: 'docker_password', variable: 'dockerpass')]) {
+                    sh 'docker login -u ajaycentos -p ${dockerpass}'
+                    sh 'docker push ajaycentos/mynginx:v1'
+    
+                  }
+            }
+        }
+     stage('Deploy app on K8s')
+        {
+            steps{
+                kubernetesDeploy configs: 'project2/mynginx-deploy.yaml', kubeconfigId: 'mykube'
+            }
+        }
+    }
+}
